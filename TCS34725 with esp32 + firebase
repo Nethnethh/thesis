@@ -1,0 +1,100 @@
+// this one is done and work with flutter code + firebase also 
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <Firebase_ESP_Client.h>
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+#include "time.h" // Standard library for time
+
+// Required for Token and RTDB helper functions
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
+
+// ================= CONFIG =================
+#define WIFI_SSID "akane"             
+#define WIFI_PASSWORD "12345678"      
+#define API_KEY "AIzaSyC4gfx6XEav11wd1hD0_QZd_OMLrpLs0iM"
+#define DATABASE_URL "https://thesis-7e717-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
+// Time settings for your region (UTC+7)
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 7 * 3600; // 7 hours * 3600 seconds
+const int   daylightOffset_sec = 0;   // No daylight savings in your region
+
+// ================= OBJECTS =================
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
+
+// Function to get the local time as a string
+void printLocalTime() {
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.print("Time Error  ");
+    return;
+  }
+  // This prints the format 14:55:00
+  Serial.print(&timeinfo, "%H:%M:%S");
+  Serial.print("  ");
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // 1. Connect WiFi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nWiFi Connected!");
+
+  // 2. Init Time (NTP)
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  // 3. Init Sensor
+  if (tcs.begin()) {
+    Serial.println("TCS34725 Found!");
+  } else {
+    Serial.println("Sensor Missing!");
+    while(1);
+  }
+
+  // 4. Init Firebase
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("Auth Success!");
+  }
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+}
+
+void loop() {
+  if (Firebase.ready()) {
+    uint16_t r, g, b, c;
+    tcs.getRawData(&r, &g, &b, &c);
+    
+    // PRINT READABLE TIME TO SERIAL MONITOR
+    Serial.print("Time: ");
+    printLocalTime(); 
+
+    // Send to Firebase
+    FirebaseJson json;
+    json.set("red", r);
+    json.set("green", g);
+    json.set("blue", b);
+    json.set("clear", c);
+    json.set("timestamp/.sv", "timestamp"); 
+
+    if (Firebase.RTDB.pushJSON(&fbdo, "/color_logs", &json)) {
+      Serial.printf("-> R:%d G:%d B:%d SUCCESS\n", r, g, b);
+    } else {
+      Serial.println(fbdo.errorReason());
+    }
+  }
+  delay(5000); 
+}
