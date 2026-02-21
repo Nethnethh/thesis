@@ -1,0 +1,33 @@
+// MG-138 with esp32 test with okra 
+#define MG138_PIN 35
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int raw = analogRead(MG138_PIN);
+  float percent = (raw / 4095.0) * 100.0;
+  
+  Serial.println("=== MG-138 Reading ===");
+  Serial.print("Raw Value: ");  Serial.println(raw);
+  Serial.print("Gas Level: "); Serial.print(percent); Serial.println(" %");
+  Serial.println("======================");
+  delay(2000);
+}
+
+/*
+here the result after test 
+=== MG-138 Reading ===
+Raw Value: 1814
+Gas Level: 44.30 %
+======================
+=== MG-138 Reading ===
+Raw Value: 1792
+Gas Level: 43.76 %
+======================
+=== MG-138 Reading ===
+Raw Value: 1767
+Gas Level: 43.15 %
+======================
+*/
