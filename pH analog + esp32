@@ -1,0 +1,24 @@
+/* pH Module      ESP32
+U+     →       VIN  (5V, not 3V3!)
+G      →       GND
+Po     →       D32
+*/ 
+
+#define PH_PIN 32
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int raw = analogRead(PH_PIN);
+  float voltage = raw * (3.3 / 4095.0);
+  float pH = 3.5 * voltage + 0.0;
+
+  Serial.println("=== pH Reading ===");
+  Serial.print("Raw: ");     Serial.println(raw);
+  Serial.print("Voltage: "); Serial.print(voltage); Serial.println(" V");
+  Serial.print("pH: ");      Serial.println(pH);
+  Serial.println("==================");
+  delay(2000);
+}
