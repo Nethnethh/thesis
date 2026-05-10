@@ -1,5 +1,3 @@
-// BME680 + firebas + flutter app 
-
 #include <Wire.h>
 #include <Adafruit_BME680.h>
 #include <ESP8266WiFi.h>
